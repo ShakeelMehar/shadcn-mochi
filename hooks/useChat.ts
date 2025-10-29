@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import apiClient from "@/lib/apiClient";
-import { normalizeListResponse } from "@/lib/utils";
 
 export interface ChatSummary {
   id: string;
@@ -30,8 +29,8 @@ export const useChat = () => {
     try {
       setLoadingChats(true);
       setError(null);
-      const { data } = await apiClient.get("/chat");
-      setChats(normalizeListResponse<ChatSummary>(data));
+      const { data } = await apiClient.get<ChatSummary[]>("/chat");
+      setChats(data ?? []);
     } catch (err: any) {
       setError(err?.response?.data?.message ?? "Failed to load chats");
     } finally {
@@ -43,7 +42,7 @@ export const useChat = () => {
     try {
       setLoadingMessages(true);
       setError(null);
-      const { data } = await apiClient.get(
+      const { data } = await apiClient.get<{ data: ChatMessage[] }>(
         `/chat/${chatId}/messages`,
         {
           params: { chat: chatId, page, limit }
@@ -51,7 +50,7 @@ export const useChat = () => {
       );
       setMessages((prev) => ({
         ...prev,
-        [chatId]: normalizeListResponse<ChatMessage>(data)
+        [chatId]: data?.data ?? []
       }));
     } catch (err: any) {
       setError(err?.response?.data?.message ?? "Failed to load messages");
