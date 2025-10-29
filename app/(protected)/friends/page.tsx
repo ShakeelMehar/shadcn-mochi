@@ -21,11 +21,13 @@ export default function FriendsPage() {
   } = useFriends();
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<typeof friends>([]);
+  const [searchAttempted, setSearchAttempted] = useState(false);
   const [inviteAddress, setInviteAddress] = useState("");
 
   const handleSearch = async () => {
     const results = await searchUsers(searchTerm);
     setSearchResults(results);
+    setSearchAttempted(true);
   };
 
   const handleInvite = async () => {
@@ -33,6 +35,12 @@ export default function FriendsPage() {
     await inviteEmail(inviteAddress);
     setInviteAddress("");
   };
+
+  const discoverEmptyMessage = !searchAttempted
+    ? "Search to see community members."
+    : searchResults.length === 0
+    ? "No people found for that search yet."
+    : null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -107,21 +115,30 @@ export default function FriendsPage() {
             </Button>
           </div>
           <div className="space-y-3">
-            {searchResults.length ? (
-              searchResults.map((person) => (
-                <div key={person.id} className="flex items-center justify-between rounded-2xl bg-muted/20 p-3">
+            {searchResults.map((person) => {
+              const primary = person.name ?? person.email ?? person.fingerprint ?? "Unknown member";
+              const secondary = person.email ?? (person.fingerprint ? `ID: ${person.fingerprint}` : null);
+
+              const canAdd = Boolean(person.id);
+
+              return (
+                <div
+                  key={(person.id as string | undefined) ?? primary}
+                  className="flex items-center justify-between rounded-2xl bg-muted/20 p-3"
+                >
                   <div>
-                    <p className="text-sm font-semibold">{person.name ?? person.email}</p>
-                    <p className="text-xs text-muted-foreground">{person.email}</p>
+                    <p className="text-sm font-semibold">{primary}</p>
+                    {secondary ? <p className="text-xs text-muted-foreground">{secondary}</p> : null}
                   </div>
-                  <Button size="sm" onClick={() => addFriend(person.id)}>
+                  <Button size="sm" onClick={() => person.id && addFriend(person.id)} disabled={!canAdd}>
                     <UserPlus className="mr-1 h-4 w-4" /> Add
                   </Button>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">Search to see community members.</p>
-            )}
+              );
+            })}
+            {discoverEmptyMessage ? (
+              <p className="text-sm text-muted-foreground">{discoverEmptyMessage}</p>
+            ) : null}
           </div>
         </CardContent>
       </Card>

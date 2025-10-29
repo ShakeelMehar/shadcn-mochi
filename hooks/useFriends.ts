@@ -2,14 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import apiClient from "@/lib/apiClient";
+import { normalizeListResponse } from "@/lib/utils";
 
-type FriendStatus = "accepted" | "pending" | "requested";
+type FriendStatus = "accepted" | "pending" | "requested" | string;
 
 export interface FriendEntry {
   id: string;
-  name: string;
-  email: string;
-  status: FriendStatus;
+  name?: string;
+  email?: string;
+  status?: FriendStatus;
+  fingerprint?: string;
+  [key: string]: unknown;
 }
 
 export const useFriends = () => {
@@ -21,8 +24,8 @@ export const useFriends = () => {
     try {
       setLoading(true);
       setError(null);
-      const { data } = await apiClient.get<{ data: FriendEntry[] }>("/friends/list");
-      setFriends(data?.data ?? []);
+      const { data } = await apiClient.get("/friends/list");
+      setFriends(normalizeListResponse<FriendEntry>(data));
     } catch (err: any) {
       setError(err?.response?.data?.message ?? "Unable to load friends");
     } finally {
@@ -30,13 +33,21 @@ export const useFriends = () => {
     }
   }, []);
 
-  const searchUsers = useCallback(async (query: string) => {
-    if (!query) return [] as FriendEntry[];
-    const { data } = await apiClient.get<{ data: FriendEntry[] }>("/friends/search", {
-      params: { search: query }
-    });
-    return data?.data ?? [];
-  }, []);
+  const searchUsers = useCallback(
+    async (query: string) => {
+      if (!query.trim()) return [] as FriendEntry[];
+      try {
+        const { data } = await apiClient.get("/friends/search", {
+          params: { search: query }
+        });
+        return normalizeListResponse<FriendEntry>(data);
+      } catch (err: any) {
+        setError(err?.response?.data?.message ?? "Unable to search users");
+        return [];
+      }
+    },
+    []
+  );
 
   const inviteEmail = useCallback(async (email: string) => {
     try {

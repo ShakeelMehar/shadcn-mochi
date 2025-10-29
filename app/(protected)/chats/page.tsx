@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useChat } from "@/hooks/useChat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,12 +25,14 @@ export default function ChatsPage() {
   const [creatingChat, setCreatingChat] = useState(false);
   const [newChatName, setNewChatName] = useState("");
 
+  const chatList = useMemo(() => (Array.isArray(chats) ? chats : []), [chats]);
+
   useEffect(() => {
-    if (!activeChat && chats.length > 0) {
-      setActiveChat(chats[0].id);
-      fetchMessages(chats[0].id);
+    if (!activeChat && chatList.length > 0) {
+      setActiveChat(chatList[0].id);
+      fetchMessages(chatList[0].id);
     }
-  }, [activeChat, chats, fetchMessages]);
+  }, [activeChat, chatList, fetchMessages]);
 
   const handleSend = async () => {
     if (!activeChat) return;
@@ -74,7 +76,7 @@ export default function ChatsPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {chats.map((chat) => (
+              {chatList.map((chat) => (
                 <button
                   key={chat.id}
                   onClick={() => {
@@ -91,7 +93,7 @@ export default function ChatsPage() {
                   <span className="text-xs text-muted-foreground">{chat.updated}</span>
                 </button>
               ))}
-              {chats.length === 0 ? (
+              {chatList.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No chats yet. Create one to get started.</p>
               ) : null}
             </div>
@@ -102,7 +104,7 @@ export default function ChatsPage() {
 
       <Card className="flex flex-col">
         <CardHeader>
-          <CardTitle>{chats.find((chat) => chat.id === activeChat)?.name ?? "Messages"}</CardTitle>
+          <CardTitle>{chatList.find((chat) => chat.id === activeChat)?.name ?? "Messages"}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-1 flex-col gap-4">
           <div className="flex-1 space-y-3 overflow-y-auto rounded-2xl bg-muted/20 p-4 scrollbar-thin">
